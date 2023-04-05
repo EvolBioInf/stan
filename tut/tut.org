@@ -1,0 +1,4 @@
+#+begin_export latex
+\section*{Introduction}
+This tutorial demonstrates how to simulate targets and neighbors with \ty{stan}.
+#+end_export

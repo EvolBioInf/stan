@@ -1,0 +1,46 @@
+\begin{figure}[ht]
+  \begin{center}
+    \input{tnFrag}
+\hspace{-2.8cm}\scalebox{0.6}{\includegraphics{tn}}
+\end{center}
+\caption{The program \ty{stan} simulates a genealogy of targets,
+  $\mathcal{T}$, and neighbors, $\mathcal{N}$. It then simulates
+  genomes sequences along this phylogeny. The targets contain regions
+  (gray) that are either hyper-mutated or deleted in the
+  neighbors. These regions are searched for by tools for
+  neighbor-based marker design.}\label{fig:tn}
+\end{figure}
+
+Diagnostic genetic markers are developed from sequence regions that
+are present in all targets and absent from all other sequences. This
+absence from all other sequences helps to ensure that the markers do
+not cross-react. Since the vast majority of cross-reacting sequences
+of a set of target strains are contained in the closest phylogenetic
+neighbors, subtraction of neighbors from targets is a useful first
+step when designing markers.
+
+Programs for such neighbor-based marker design thus start from a set
+of target sequences and a set of neighbor sequences and determine the
+regions present in all targets and absent from all
+neighbors. Figure~\ref{fig:tn} is a cartoon of the phylogeny of five
+target, $\mathcal{T}$, and neighbor, $\mathcal{N}$, genomes each. The
+target genomes contain two common regions that are absent from the
+neighbors. The absence from the neighbors is achieved either through
+hyper mutation or deletion. Such regions make good starting material
+for marker development. The program Fur for \emph{find unique regions}
+is an example of a program for efficient neighbor-based extraction of
+target-specific regions from genome sequences~\cite{hau21:fur}.
+
+Like any estimation procedure, programs for neighbor-based extraction
+of marker regions work under a model. This model can in turn be used
+to simulate data for testing programs for neighbor-based marker
+extraction. Performing well on such simulated data is a necessary
+condition for application to real data, where the complications are
+usually much greater. Here I write the program \ty{stan} for
+simulating target and neighbor sequences.
+
+In \ty{stan} we construct a coalescent tree where the deepest split is
+between targets and neighbors. We then simulate sequences along that
+coalescent and hyper-mutate regions set by the user. Finally, the
+target and the neighbor sequences are written to into separate files
+in separate directories.
