@@ -67,6 +67,20 @@
   "os"
 #+end_src
 #+begin_export latex
+\section{\ty{Create}}
+!\ty{Create} creates a file with error checking.
+#+end_export
+#+begin_src go <<Functions, Pa. \ref{pa:util}>>=
+  func Create(file string) *os.File {
+	  f, err := os.Create(file)
+	  if err != nil {
+		  fmt.Fprintf(os.Stderr, "couldn't create %s\n", file)
+		  os.Exit(1)
+	  }
+	  return f
+  }
+#+end_src
+#+begin_export latex
 \section{\ty{Name}}
 !\ty{Name} sets the program name. It also customizes the error
 !messages generated via the \ty{log} package by prefixing them with
