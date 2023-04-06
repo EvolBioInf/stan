@@ -12,3 +12,5 @@ doc/*.toc
 doc/tut.tex
 doc/util.tex
 stan/stan
+stan/targets
+stan/neighbors
