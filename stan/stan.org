@@ -1,4 +1,5 @@
 #+begin_export latex
+\section*{Implementation}
 Our aim is to write \ty{stan} to simulate targets and neighbors. The
 outline of \ty{stan} has hooks for imports, types, methods, functions,
 and the logic of the main function.  \bpr{stan}{pr:sta}
@@ -734,8 +735,7 @@ mutations.
 We look up the number of target mutations and the sample size. Then we
 iterate over the mutations, and for each one generate and store its
 random position in the DNA sequence. We also record the mutation
-pattern of the segregating site by calling the function \ty{recSeg} on
-the child of the current node.
+pattern of the segregating site.
 #+end_export
 #+begin_src go <<Iterate over target mutations, Pr. \ref{pr:sta}>>=
   m := haps.n2m[v.Id].target
@@ -744,9 +744,23 @@ the child of the current node.
 	  p := haps.r.Intn(haps.ts)
 	  haps.pos = append(haps.pos, t2p[p])
 	  ss := make([]byte, n)
-	  recSeg(v.Child, ss, haps.l2h)
+	  //<<Record segregating sites, Pr. \ref{pr:sta}>>
 	  haps.hap = append(haps.hap, ss)
   }
+#+end_src
+#+begin_export latex
+The mutation pattern is recorded by calling the recursive function
+\ty{recSeg}. If we are dealing with an internal node, we call
+\ty{recSeg} on its child to make sure we only propagate to its
+descendants.
+#+end_export
+#+begin_src go <<Record segregating sites, Pr. \ref{pr:sta}>>=
+  if v.Child != nil {
+	  recSeg(v.Child, ss, haps.l2h)
+  } else {
+	  recSeg(v, ss, haps.l2h)
+  }
+
 #+end_src
 #+begin_export latex
 At each leaf, the function \ty{recSeg} records a mutation in the
