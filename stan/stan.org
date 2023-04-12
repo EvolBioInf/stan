@@ -494,13 +494,18 @@ declare the type \ty{Mutation} for holding these two mutation counts.
 For the target sequences, the mutation rate per site is the same for
 the background and the target regions. We call \ty{mutate} on the
 target coalescent with that mutation rate for background and target
-regions, and a map for holding the mutations per node.
+regions, and a map for holding the mutations per node. Note that we
+need to isolate the target root from its sibling the neighbor root
+before traversing the target coalescent. After the traversal we
+restore the sibling link.
 #+end_export
 #+begin_src go <<Mutate targets, Pr. \ref{pr:sta}>>=
   tm := float64(ts) * *optM
   bm := float64(bs) * *optM
   node2mut := make(map[int]Mutation)
+  tc.Sib = nil
   mutate(tc, tm, bm, ran, node2mut)
+  tc.Sib = nc
 #+end_src
 #+begin_export latex
 The function \ty{mutate} visits every node and calculates its
@@ -547,7 +552,9 @@ We import \ty{math}.
 #+end_src
 #+begin_export latex
 We mutate the neighbors, where the background mutation rate and the
-target mutation rate differ.
+target mutation rate differ. The sibling link of the root of the
+neighbor coalescent is \ty{nil}, so we don't need to change anything
+before traversing the neighbor tree.
 #+end_export
 #+begin_src go <<Mutate neighbors, Pr. \ref{pr:sta}>>=
   bm = float64(bs) * *optMM
@@ -585,9 +592,10 @@ neighbor coalescent.
 #+begin_src go <<Map leaves to haplotypes, Pr. \ref{pr:sta}>>=
   leaf2hap := make(map[int]int)
   start := 0
-  mapLeaves(tc, start, leaf2hap)
-  start = *optT
-  mapLeaves(nc, start, leaf2hap)
+  tc.Sib = nil
+  start = mapLeaves(tc, start, leaf2hap)
+  tc.Sib = nc
+  start = mapLeaves(nc, start, leaf2hap)
 #+end_src
 #+begin_export latex
 In the function \ty{mapLeaves} we recursively traverse the given tree
@@ -595,16 +603,17 @@ and map leaf identifiers onto consecutive integers that serve as
 haplotype names.
 #+end_export
 #+begin_src go <<Functions, Pr. \ref{pr:sta}>>=
-  func mapLeaves(v *nwk.Node, h int, l2h map[int]int) {
+  func mapLeaves(v *nwk.Node, h int, l2h map[int]int) int {
 	  if v == nil {
-		  return
+		  return h
 	  }
 	  if v.Child == nil {
 		  l2h[v.Id] = h
 		  h++
 	  }
-	  mapLeaves(v.Child, h, l2h)
-	  mapLeaves(v.Sib, h, l2h)
+	  h = mapLeaves(v.Child, h, l2h)
+	  h = mapLeaves(v.Sib, h, l2h)
+	  return h
   }
 #+end_src
 #+begin_export latex
@@ -726,7 +735,7 @@ We look up the number of target mutations and the sample size. Then we
 iterate over the mutations, and for each one generate and store its
 random position in the DNA sequence. We also record the mutation
 pattern of the segregating site by calling the function \ty{recSeg} on
-the current node.
+the child of the current node.
 #+end_export
 #+begin_src go <<Iterate over target mutations, Pr. \ref{pr:sta}>>=
   m := haps.n2m[v.Id].target
@@ -735,7 +744,7 @@ the current node.
 	  p := haps.r.Intn(haps.ts)
 	  haps.pos = append(haps.pos, t2p[p])
 	  ss := make([]byte, n)
-	  recSeg(v, ss, haps.l2h)
+	  recSeg(v.Child, ss, haps.l2h)
 	  haps.hap = append(haps.hap, ss)
   }
 #+end_src
@@ -764,7 +773,7 @@ positions and the mutation patterns of the segregating sites.
 	  p := haps.r.Intn(haps.bs)
 	  haps.pos = append(haps.pos, b2p[p])
 	  ss := make([]byte, n)
-	  recSeg(v, ss, haps.l2h)
+	  recSeg(v.Child, ss, haps.l2h)
 	  haps.hap = append(haps.hap, ss)
   }
 #+end_src
@@ -840,8 +849,9 @@ if the nucleotide has mutated.
 #+begin_export latex
 Instead of mutating the target regions, the user might have opted for
 deleting them. In that case we iterate over the target regions and
-delete them from the neighbor sequences accordingly. After the
-deletion we mark the new end of the neighbor sequences.
+delete them from the neighbor sequences accordingly by copying the
+spacers in between. After the deletion we mark the new end of the
+neighbor sequences.
 #+end_export
 #+begin_src go <<Delete target regions, Pr. \ref{pr:sta}>>=
   start := 0
@@ -849,22 +859,30 @@ deletion we mark the new end of the neighbor sequences.
   cols := len(al[0])
   for _, region := range regions {
 	  end := region.s
-	  //<<Delete region, Pr. \ref{pr:sta}>>
-	  start = end
+	  //<<Copy spacer region, Pr. \ref{pr:sta}>>
+	  start = region.e + 1
   }
+  //<<Copy last spacer region, Pr. \ref{pr:sta}>>
   //<<Mark end of neighbor sequences, Pr. \ref{pr:sta}>>
 #+end_src
 #+begin_export latex
 We walk from the start to the end of the background sequence and copy
 its nucleotides.
 #+end_export
-#+begin_src go <<Delete region, Pr. \ref{pr:sta}>>=
+#+begin_src go <<Copy spacer region, Pr. \ref{pr:sta}>>=
   for i := start; i < end; i++ {
 	  for j := *optT; j < cols; j++ {
 		  al[row][j] = al[i][j]
 	  }
 	  row++
   }
+#+end_src
+#+begin_export latex
+The last spacer region ends at the end of the sequence.
+#+end_export
+#+begin_src go <<Copy last spacer region, Pr. \ref{pr:sta}>>=
+  end := len(al)
+  //<<Copy spacer region, Pr. \ref{pr:sta}>>
 #+end_src
 #+begin_export latex
 We mark the new end of the neighbors with zeros as nucleotides.
