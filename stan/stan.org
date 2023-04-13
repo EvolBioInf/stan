@@ -1,5 +1,5 @@
 #+begin_export latex
-\section*{Implementation}
+\section{Implementation}
 Our aim is to write \ty{stan} to simulate targets and neighbors. The
 outline of \ty{stan} has hooks for imports, types, methods, functions,
 and the logic of the main function.  \bpr{stan}{pr:sta}
@@ -978,4 +978,162 @@ into separate files.
 		  f.Close()
 	  }
   }
+#+end_src
+#+begin_export latex
+We're done writing \ty{stan}, let's test it.
+\section{Testing}
+The outline of our test for \ty{stan} contains hooks for imports and
+the testing logic.
+#+end_export
+#+begin_src go <<stan_test.go>>=
+  package main
+
+  import (
+	  "testing"
+	  //<<Testing imports, Pr. \ref{pr:sta}>>
+  )
+  func TestStan(t *testing.T) {
+	  //<<Testing, Pr. \ref{pr:sta}>>
+  }
+#+end_src
+#+begin_export latex
+We construct a set of tests and then iterate over them.
+#+end_export
+#+begin_src go <<Testing, Pr. \ref{pr:sta}>>=
+  tests := make([]*exec.Cmd, 0)
+  //<<Construct tests, Pr. \ref{pr:sta}>>
+  for i, test := range tests {
+	  //<<Run test, Pr. \ref{pr:sta}>>
+  }
+#+end_src
+#+begin_export latex
+#+end_export
+#+begin_export latex
+The program \ty{stan} writes nothing to the standard output, except
+when the user requests the coalescent tree to be printed. So we begin
+with that and call \ty{stan} with a seeded random number generator to
+make the result reproducible.
+#+end_export
+#+begin_src go <<Construct tests, Pr. \ref{pr:sta}>>=
+  test := exec.Command("./stan", "-s", "3", "-p")
+  tests = append(tests, test)
+#+end_src
+#+begin_export latex
+We import \ty{exec}.
+#+end_export
+#+begin_src go <<Testing imports, Pr. \ref{pr:sta}>>=
+  "os/exec"
+#+end_src
+#+begin_export latex
+To test the remaining options, we wrap the calls to \ty{stan} in shell
+scripts, which then output the result sequences. We call the scripts
+\ty{test1.sh}, \ty{test2.sh}, and so one, and begin with one that runs
+with only default options, except that we allow the directories we
+just created to be overwritten.
+#+end_export
+#+begin_src sh <<test1.sh>>=
+  ./stan -s 3 -o
+  cat targets/* neighbors/*
+#+end_src
+#+begin_export latex
+We reduce the target mutation rate to 1\%.
+#+end_export
+#+begin_src sh <<test2.sh>>=
+  ./stan -s 3 -o -M 0.01
+  cat targets/* neighbors/*
+#+end_src
+#+begin_export latex
+We call the neighbors directory \ty{otherNeighbors} and remove it
+again.
+#+end_export
+#+begin_src sh <<test3.sh>>=
+  ./stan -s 3 -o -N otherNeighbors
+  cat targets/* otherNeighbors/*
+  rm -r otherNeighbors
+#+end_src
+#+begin_export latex
+We call the target directory \ty{otherTargets} and remove it again.
+#+end_export
+#+begin_src sh <<test4.sh>>=
+  ./stan -s 3 -o -T otherTargets
+  cat otherTargets/* neighbors/*
+  rm -r otherTargets
+#+end_src
+#+begin_export latex
+We halve the sequence length.
+#+end_export
+#+begin_src sh <<test5.sh>>=
+  ./stan -s 3 -o -l 5000
+  cat targets/* neighbors/*
+#+end_src
+#+begin_export latex
+We double the background mutation rate.
+#+end_export
+#+begin_src sh <<test6.sh>>=
+  ./stan -s 3 -o -m 0.02
+  cat targets/* neighbors/*
+#+end_src
+#+begin_export latex
+We halve the number of neighbors.
+#+end_export
+#+begin_src sh <<test7.sh>>=
+  ./stan -s 3 -o -n 5
+  cat targets/* neighbors/*
+#+end_src
+#+begin_export latex
+We target two new regions.
+#+end_export
+#+begin_src sh <<test8.sh>>=
+  ./stan -s 3 -o -r 1501-2000,3501-4000
+  cat targets/* neighbors/*
+#+end_src
+#+begin_export latex
+We halve the number of targets. Since this is our last testing script,
+we also remove the target and neighbor directories at the end.
+#+end_export
+#+begin_src sh <<test9.sh>>=
+  ./stan -s 3 -o -t 5
+  cat targets/* neighbors/*
+  rm -r targets neighbors
+#+end_src
+#+begin_export latex
+We construct the calls to the nine test scripts we have just written.
+#+end_export
+#+begin_src go <<Construct tests, Pr. \ref{pr:sta}>>=
+  for i := 1; i <= 9; i++ {
+	  t := "./test" + strconv.Itoa(i) + ".sh"
+	  test = exec.Command("bash", t)
+	  tests = append(tests, test)
+  }
+#+end_src
+#+begin_export latex
+We import \ty{strconv}.
+#+end_export
+#+begin_src go <<Testing imports, Pr. \ref{pr:sta}>>=
+  "strconv"
+#+end_src
+#+begin_export latex
+When we run a test, we compare the result we get with the result we
+want, which is stored in files \ty{r1.txt}, \ty{r2.txt}, and so on.
+#+end_export
+#+begin_src go <<Run test, Pr. \ref{pr:sta}>>=
+  get, err := test.Output()
+  if err != nil {
+	  t.Error(err)
+  }
+  file := "r" + strconv.Itoa(i+1) + ".txt"
+  want, err := os.ReadFile(file)
+  if err != nil {
+	  t.Error(err)
+  }
+  if !bytes.Equal(get, want) {
+	  t.Errorf("get:\n%s\nwant:\n%s\n", get, want)
+  }
+#+end_src
+#+begin_export latex
+We import \ty{os} and \ty{bytes}.
+#+end_export
+#+begin_src go <<Testing imports, Pr. \ref{pr:sta}>>=
+  "os"
+  "bytes"
 #+end_src

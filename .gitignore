@@ -14,3 +14,5 @@ doc/util.tex
 stan/stan
 stan/targets
 stan/neighbors
+stan/test[123456789].sh
+stan/r*.txt
