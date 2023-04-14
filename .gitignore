@@ -11,8 +11,9 @@ doc/stanDoc.ps
 doc/*.toc
 doc/tut.tex
 doc/util.tex
+stan/fur.sh
+stan/neighbors
 stan/stan
 stan/targets
-stan/neighbors
 stan/test[123456789].sh
 stan/r*.txt

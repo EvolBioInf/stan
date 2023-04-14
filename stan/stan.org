@@ -71,10 +71,10 @@ We declare a set of eight options to specify the target and neighbor sequences.
   optTT := flag.String("T", "targets", "target directory")
   optNN := flag.String("N", "neighbors", "neighbor directory")
   optL := flag.Int("l", 10000, "sequence length")
-  optR := flag.String("r", "501-600", "target regions")
+  optR := flag.String("r", "4501-5500", "target regions")
   optM := flag.Float64("m", 0.01, "background mutation rate")
-  optMM := flag.Float64("M", 0.25, "targe region mutation rate; " +
-	  "delete from neighbors if negative")
+  optMM := flag.Float64("M", 0.25, "targe region mutation " +
+	  "rate; delete from neighbors if negative")
 #+end_src
 #+begin_export latex
 We import \ty{flag}.
@@ -181,7 +181,8 @@ Target regions are passed as comma-delimited intervals, for example,
 \end{verbatim}
 We split this string at the commas and the resulting intervals at the
 hyphens. We assume that the start and end positions supplied by the
-user are one-based, which we store zero-based.
+user are one-based, which we store zero-based, if the region passes
+our check.
 #+end_export
 #+begin_src go <<Extract target regions, Pr. \ref{pr:sta}>>=
   strs := strings.Split(*optR, ",")
@@ -191,6 +192,7 @@ user are one-based, which we store zero-based.
 	  s, err := strconv.Atoi(coords[0])
 	  util.Check(err)
 	  e, err := strconv.Atoi(coords[1])
+	  //<<Check region, Pr. \ref{pr:sta}>>
 	  reg := Region{s: s-1, e: e-1}
 	  regions = append(regions, reg)
   }
@@ -201,6 +203,22 @@ We import \ty{strings} and \ty{strconv}.
 #+begin_src go <<Imports, Pr. \ref{pr:sta}>>=
   "strings"
   "strconv"
+#+end_src
+#+begin_export latex
+If the end of a target region extends beyond the end of the sequence,
+we bail with message.
+#+end_export
+#+begin_src go <<Check region, Pr. \ref{pr:sta}>>=
+  if e > *optL {
+	  log.Fatalf("Region %d-%d extends beyond " +
+		  "the end of the sequence.\n", s, e)
+  }
+#+end_src
+#+begin_export latex
+We import \ty{log}.
+#+end_export
+#+begin_src go <<Imports, Pr. \ref{pr:sta}>>=
+  "log"
 #+end_src
 #+begin_export latex
 We declare the type \ty{Region} as a struct with a start and an end.
@@ -711,7 +729,8 @@ Inside \ty{genHaps} we iterate over the target and background
 mutations.
 #+end_export
 #+begin_src go <<Functions, Pr. \ref{pr:sta}>>=
-  func genHaps(v *nwk.Node, haps *Haplotypes, t2p, b2p map[int]int) {
+  func genHaps(v *nwk.Node, haps *Haplotypes, t2p,
+	  b2p map[int]int) {
 	  if v == nil { return }
 	  //<<Iterate over target mutations, Pr. \ref{pr:sta}>>
 	  //<<Iterate over background mutations, Pr. \ref{pr:sta}>>
@@ -1099,10 +1118,10 @@ We call the target directory \ty{otherTargets} and remove it again.
   rm -r otherTargets
 #+end_src
 #+begin_export latex
-We halve the sequence length.
+We reduce the sequence length.
 #+end_export
 #+begin_src sh <<test5.sh>>=
-  ./stan -s 3 -o -l 5000
+  ./stan -s 3 -o -l 7500
   cat targets/* neighbors/*
 #+end_src
 #+begin_export latex
