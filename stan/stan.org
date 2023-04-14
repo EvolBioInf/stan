@@ -61,8 +61,8 @@ We declare a set of eight options to specify the target and neighbor sequences.
 \item \ty{-N} neighbor directory
 \item \ty{-l} sequence length
 \item \ty{-r} target regions
-\item \ty{-m} background mutation rate
-\item \ty{-M} mutation rate of the target regions
+\item \ty{-m} background mutation rate, $\theta/\mbox{nucleotide}$
+\item \ty{-M} mutation rate of the target regions, $\theta/\mbox{nucleotide}$
 \end{enumerate}
 #+end_export
 #+begin_src go <<Declare options, Pr. \ref{pr:sta}>>=
@@ -72,9 +72,11 @@ We declare a set of eight options to specify the target and neighbor sequences.
   optNN := flag.String("N", "neighbors", "neighbor directory")
   optL := flag.Int("l", 10000, "sequence length")
   optR := flag.String("r", "4501-5500", "target regions")
-  optM := flag.Float64("m", 0.01, "background mutation rate")
+  optM := flag.Float64("m", 0.01, "background mutation rate, " +
+	  "theta per nucleotide")
   optMM := flag.Float64("M", 0.25, "targe region mutation " +
-	  "rate; delete from neighbors if negative")
+	  "rate, theta per nucleotide; " +
+	  "delete from neighbors if negative")
 #+end_src
 #+begin_export latex
 We import \ty{flag}.
