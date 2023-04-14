@@ -19,8 +19,8 @@ and the logic of the main function.  \bpr{stan}{pr:sta}
 #+end_src
 #+begin_export latex
 \epr In the main function we first set the program name. Then we set
-the program usage, declare and parse the options, generate the targets
-and neighbors, and print them.
+the usage of \ty{stan}, declare and parse its options, generate the
+targets and neighbors, and print them.
 #+end_export
 #+begin_src go <<Main function, Pr. \ref{pr:sta}>>=
   util.Name("stan")
@@ -31,7 +31,7 @@ and neighbors, and print them.
   //<<Print targets and neighbors, Pr. \ref{pr:sta}>>
 #+end_src
 #+begin_export latex
-We import \ty{util}, which is a subpackage of the module \ty{stan}.
+We import \ty{util}, which part of the module \ty{stan}.
 #+end_export
 #+begin_src go <<Imports, Pr. \ref{pr:sta}>>=
   "github.com/evolbioinf/stan/util"
@@ -83,16 +83,18 @@ We import \ty{flag}.
   "flag"
 #+end_src
 #+begin_export latex
-We also declare four options to administer runs of \ty{stan}:
+We also declare five auxiliary options:
 \begin{enumerate}
-\item \ty{-p} print coalescent tree
+\item \ty{-c} print coalescent tree
+\item \ty{-a} print haplotypes
 \item \ty{-o} overwrite existing target and/or neighbor directory
 \item \ty{-s} seed for random number generator
 \item \ty{-v} version
 \end{enumerate}
 #+end_export
 #+begin_src go <<Declare options, Pr. \ref{pr:sta}>>=
-  optP := flag.Bool("p", false, "print coalescent tree")
+  optC := flag.Bool("c", false, "print coalescent tree")
+  optA := flag.Bool("a", false, "print haplotypes")
   optO := flag.Bool("o", false, "overwrite existing directories")
   optS := flag.Int("s", 0, "seed for random number generator")
   optV := flag.Bool("v", false, "version")
@@ -155,7 +157,8 @@ We import \ty{fmt}.
 #+end_src
 #+begin_export latex
 If the user provided a seed for the random number generator, we use
-that. Otherwise we use the current time.
+that. Otherwise we use the number of nanoseconds since the start of
+the Unix epoch in 1970.
 #+end_export
 #+begin_src go <<Seed random number generator, Pr. \ref{pr:sta}>>=
   seed := int64(*optS)
@@ -176,9 +179,9 @@ Target regions are passed as comma-delimited intervals, for example,
 \begin{verbatim}
 1501-2000,3501-4000
 \end{verbatim}
-We split this string at the comma and the resulting intervals at the
-hyphen. We assume the start and end positions supplied by the user to
-be one-based, which we store zero-based.
+We split this string at the commas and the resulting intervals at the
+hyphens. We assume that the start and end positions supplied by the
+user are one-based, which we store zero-based.
 #+end_export
 #+begin_src go <<Extract target regions, Pr. \ref{pr:sta}>>=
   strs := strings.Split(*optR, ",")
@@ -249,7 +252,7 @@ neighbors, of course.
 #+end_export
 #+begin_src go <<Generate targets and neighbors, Pr. \ref{pr:sta}>>=
   //<<Generate coalescent, Pr. \ref{pr:sta}>>
-  if *optP {
+  if *optC {
 	  //<<Print coalescent, Pr. \ref{pr:sta}>>
   }
   //<<Simulate sequences, Pr. \ref{pr:sta}>>
@@ -542,7 +545,7 @@ Knuth~\cite[p. 137]{knu98:ar2}.
 		  p *= r.Float64()
 		  c++
 	  }
-	  return c
+	  return c - 1
   }
 #+end_src
 #+begin_export latex
@@ -554,8 +557,8 @@ We import \ty{math}.
 #+begin_export latex
 We mutate the neighbors, where the background mutation rate and the
 target mutation rate differ. The sibling link of the root of the
-neighbor coalescent is \ty{nil}, so we don't need to change anything
-before traversing the neighbor tree.
+neighbor coalescent is already \ty{nil}, so we don't need to change
+anything before traversing the neighbor tree.
 #+end_export
 #+begin_src go <<Mutate neighbors, Pr. \ref{pr:sta}>>=
   bm = float64(bs) * *optMM
@@ -575,54 +578,39 @@ branches. However, coalescent simulations initially generate
 haplotypes, which are slices of zeros and ones for ancestral state and
 mutation. As shown in Figure~\ref{fig:tn}, every leaf in the
 coalescent is associated with a haplotype. So we map leaves to
-haplotypes, construct the actual haplotypes, and convert them to DNA
-sequences.
+haplotypes, construct the actual haplotypes, perhaps print them, and
+convert them to DNA sequences.
 #+end_export
 #+begin_src go <<Simulate sequences, Pr. \ref{pr:sta}>>=
   //<<Map leaves to haplotypes, Pr. \ref{pr:sta}>>
   //<<Generate haplotypes, Pr. \ref{pr:sta}>>
+  if *optA {
+	  //<<Print haplotypes, Pr. \ref{pr:sta}>>
+  }
   //<<Convert haplotypes to sequences, Pr. \ref{pr:sta}>>
 #+end_src
 #+begin_export latex
-We map the leaf identifiers to haplotype identifiers by calling the
-function \ty{mapLeaves} on the target coalescent and the neighbor
-coalescent. Haplotype names are consecutive integers that start at
-zero for the target coalescent and at the number of targets for the
-neighbor coalescent.
+We map the leaf identifiers to haplotype identifiers. Haplotype names
+are consecutive integers that start at zero for the target coalescent
+and at the number of targets for the neighbor coalescent.
 #+end_export
 #+begin_src go <<Map leaves to haplotypes, Pr. \ref{pr:sta}>>=
   leaf2hap := make(map[int]int)
-  start := 0
-  tc.Sib = nil
-  start = mapLeaves(tc, start, leaf2hap)
-  tc.Sib = nc
-  start = mapLeaves(nc, start, leaf2hap)
-#+end_src
-#+begin_export latex
-In the function \ty{mapLeaves} we recursively traverse the given tree
-and map leaf identifiers onto consecutive integers that serve as
-haplotype names.
-#+end_export
-#+begin_src go <<Functions, Pr. \ref{pr:sta}>>=
-  func mapLeaves(v *nwk.Node, h int, l2h map[int]int) int {
-	  if v == nil {
-		  return h
-	  }
-	  if v.Child == nil {
-		  l2h[v.Id] = h
-		  h++
-	  }
-	  h = mapLeaves(v.Child, h, l2h)
-	  h = mapLeaves(v.Sib, h, l2h)
-	  return h
+  for i := 1; i <= *optT; i++ {
+	  leaf2hap[i] = i-1
+  }
+  start := 2 * *optT
+  end := start + *optN
+  for i, j := start, *optT; i <= end; i, j = i+1, j+1 {
+	  leaf2hap[i] = j
   }
 #+end_src
 #+begin_export latex
 To generate the haplotypes, we first construct a data structure to
 hold them.  Each haplotype also has a random position along the final
 DNA sequence, which has length \ty{*optL}. If the mutation affects a
-target mutation, we draw a random number out of \ty{ts} target sites
-and need a map to convert that to a position along the final sequence;
+target region, we draw a random number out of \ty{ts} target sites and
+need a map to convert that to a position along the final sequence;
 similarly for background mutations. So we construct a target position
 map and a background position map. Then we traverse the tree to
 construct the haplotypes.
@@ -649,11 +637,11 @@ sequence. Table~\ref{tab:hap} summarizes the haplotype structure.
   \end{center}
 \end{table}
 
-We declare a structure to hold haplotypes and positions. We also store
-in this structure seven auxiliary variables: the number of target and
-background sites, the number of targets and neighbors, the maps
-between nodes and mutations and between leaves and haplotypes, and the
-random number generator.
+To represent haplotypes, we declare a structure to hold segregating
+sites and positions. We also store in this structure seven auxiliary
+variables: the number of target and background sites, the number of
+targets and neighbors, the maps between nodes and mutations and
+between leaves and haplotypes, and the random number generator.
 #+end_export
 #+begin_src go <<Types, Pr. \ref{pr:sta}>>=
   type Haplotypes struct {
@@ -680,7 +668,7 @@ store the values of the auxiliary fields.
   haps.r = ran
 #+end_src
 #+begin_export latex
-For the target position map iterate over the target regions and map
+For the target position map we iterate over the target regions and map
 each position to a consecutive integer.
 #+end_export
 #+begin_src go <<Construct target position map, Pr. \ref{pr:sta}>>=
@@ -711,7 +699,7 @@ consecutive integers.
 #+begin_export latex
 We generate the haplotypes by calling the recursive function
 \ty{genHaps}. This takes as arguments the global root, the haplotypes
-variable, and the two position maps.
+variable, and the two maps of target and background positions.
 #+end_export
 #+begin_src go <<Traverse tree to construct haplotypes, Pr. \ref{pr:sta}>>=
   genHaps(root, haps, t2p, b2p)
@@ -744,7 +732,7 @@ pattern of the segregating site.
 	  p := haps.r.Intn(haps.ts)
 	  haps.pos = append(haps.pos, t2p[p])
 	  ss := make([]byte, n)
-	  //<<Record segregating sites, Pr. \ref{pr:sta}>>
+	  //<<Record segregating site, Pr. \ref{pr:sta}>>
 	  haps.hap = append(haps.hap, ss)
   }
 #+end_src
@@ -752,15 +740,14 @@ pattern of the segregating site.
 The mutation pattern is recorded by calling the recursive function
 \ty{recSeg}. If we are dealing with an internal node, we call
 \ty{recSeg} on its child to make sure we only propagate to its
-descendants.
+descendants. If we are dealing with a leaf, we just note the mutation.
 #+end_export
-#+begin_src go <<Record segregating sites, Pr. \ref{pr:sta}>>=
+#+begin_src go <<Record segregating site, Pr. \ref{pr:sta}>>=
   if v.Child != nil {
 	  recSeg(v.Child, ss, haps.l2h)
   } else {
-	  recSeg(v, ss, haps.l2h)
+	  ss[haps.l2h[v.Id]] = 1
   }
-
 #+end_src
 #+begin_export latex
 At each leaf, the function \ty{recSeg} records a mutation in the
@@ -787,8 +774,59 @@ positions and the mutation patterns of the segregating sites.
 	  p := haps.r.Intn(haps.bs)
 	  haps.pos = append(haps.pos, b2p[p])
 	  ss := make([]byte, n)
-	  recSeg(v.Child, ss, haps.l2h)
+	  if v.Child != nil {
+		  recSeg(v.Child, ss, haps.l2h)
+	  } else {
+		  ss[haps.l2h[v.Id]] = 1
+	  }
 	  haps.hap = append(haps.hap, ss)
+  }
+#+end_src
+#+begin_export latex
+We print the haplotypes with a \ty{tabwriter}. We construct the
+\ty{tabwrite}, print the target and neighbor haplotypes to it, and
+flush it.
+#+end_export
+#+begin_src go <<Print haplotypes, Pr. \ref{pr:sta}>>=
+  w := tabwriter.NewWriter(os.Stdout, 0, 1, 1, ' ', 0)
+  //<<Print target haplotypes, Pr. \ref{pr:sta}>>
+  //<<Print neighbor haplotypes, Pr. \ref{pr:sta}>>
+  w.Flush()
+#+end_src
+#+begin_export latex
+We import \ty{tabwriter}.
+#+end_export
+#+begin_src go <<Imports, Pr. \ref{pr:sta}>>=
+  "text/tabwriter"
+#+end_src
+#+begin_export latex
+We print the haplotypes in the conventional format, one haplotype per
+row, rather than in the format we've stored them in, where segregating
+sites form the rows. We call the target haplotypes \ty{t1}, \ty{t2},
+and so on.
+#+end_export
+#+begin_src go <<Print target haplotypes, Pr. \ref{pr:sta}>>=
+  for j := 0; j < haps.tn; j++ {
+	  fmt.Fprintf(w, "t%d\t", j+1)
+	  for i := 0; i < len(haps.hap); i++ {
+		  c := strconv.Itoa(int(haps.hap[i][j]))
+		  fmt.Fprintf(w, "%s", c)
+	  }
+	  fmt.Fprintf(w, "\t\n")
+  }
+#+end_src
+#+begin_export latex
+Similarly, we print the neighbor haplotypes, which we call \ty{n1},
+\ty{n2}, etc.
+#+end_export
+#+begin_src go <<Print neighbor haplotypes, Pr. \ref{pr:sta}>>=
+  for j := haps.tn; j < haps.tn+haps.nn; j++ {
+	  fmt.Fprintf(w, "n%d\t", j - haps.tn + 1)
+	  for i := 0; i < len(haps.hap); i++ {
+		  c := strconv.Itoa(int(haps.hap[i][j]))
+		  fmt.Fprintf(w, "%s", c)
+	  }
+	  fmt.Fprintf(w, "\t\n")
   }
 #+end_src
 #+begin_export latex
@@ -952,7 +990,7 @@ nucleotides until we reach the end marker, zero.
 #+begin_src go <<Construct neighbor slice, Pr. \ref{pr:sta}>>=
   n = *optT + *optN
   for i := *optT; i < n; i++ {
-	  h := "n" + strconv.Itoa(i+1)
+	  h := "n" + strconv.Itoa(i - *optT + 1)
 	  d := make([]byte, 0)
 	  for j := 0; j < len(al); j++ {
 		  c := al[j][i]
@@ -972,7 +1010,8 @@ into separate files.
 	  err := os.Mkdir(dir, 0750)
 	  util.Check(err)
 	  for i, seq := range seqs {
-		  p := dir + "/" + name + strconv.Itoa(i+1) + ".fasta"
+		  p := dir + "/" + name + strconv.Itoa(i+1) +
+			  ".fasta"
 		  f := util.Create(p)
 		  fmt.Fprintf(f, "%s\n", seq)
 		  f.Close()
@@ -1015,7 +1054,7 @@ with that and call \ty{stan} with a seeded random number generator to
 make the result reproducible.
 #+end_export
 #+begin_src go <<Construct tests, Pr. \ref{pr:sta}>>=
-  test := exec.Command("./stan", "-s", "3", "-p")
+  test := exec.Command("./stan", "-s", "3", "-c")
   tests = append(tests, test)
 #+end_src
 #+begin_export latex
