@@ -12,7 +12,7 @@
    \STATE $\lambda\leftarrow f{i\choose 2}$ \COMMENT{Parameter for
      exponential distribution}
    \STATE $r\leftarrow \mathrm{rexp}(\lambda)$
-   \COMMENT{Random time to CA with expectation $1/\lambda$}
+   \COMMENT{Random time to coalescence with expectation $1/\lambda$}
    \STATE $t\leftarrow t + r$ \COMMENT{Times always increase}
    \STATE $v\leftarrow 2\np - i + 1$ \COMMENT{Internal node $\np+1,\np+2,...,2\np-1$}
    \STATE $\mathrm{tree}[v].\mathrm{time}\leftarrow t$

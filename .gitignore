@@ -17,3 +17,8 @@ stan/stan
 stan/targets
 stan/test[123456789].sh
 stan/r*.txt
+stan/*.db
+tut/cli.sh
+tut/*.db
+tut/targets
+tut/neighbors
