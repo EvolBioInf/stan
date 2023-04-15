@@ -6,7 +6,7 @@ tests = test1.sh test2.sh test3.sh test4.sh test5.sh test6.sh test7.sh test8.sh 
 all : $(exe)
 
 $(exe): $(exe).go ../util/util.go
-	go build -ldflags "-X github.com/evolbioinf/neighbors/util.version=$(version) -X github.com/evolbioinf/neighbors/util.date=$(date)" $(exe).go
+	go build -ldflags "-X github.com/evolbioinf/$(exe)/util.version=$(version) -X github.com/evolbioinf/$(exe)/util.date=$(date)" $(exe).go
 $(exe).go: $(exe).org
 	bash ../scripts/org2nw $(exe).org | notangle -R$(exe).go | gofmt > $(exe).go
 ../util/util.go : ../util/util.org
