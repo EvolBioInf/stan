@@ -74,9 +74,9 @@ We declare a set of eight options to specify the target and neighbor sequences.
   optR := flag.String("r", "4501-5500", "target regions")
   optM := flag.Float64("m", 0.01, "background mutation rate, " +
 	  "theta per nucleotide")
-  optMM := flag.Float64("M", 0.25, "targe region mutation " +
-	  "rate, theta per nucleotide; " +
-	  "delete from neighbors if negative")
+  optMM := flag.Float64("M", 5.0, "target region mutation " +
+	  "rate in neighbors, theta per nucleotide; " +
+	  "delete if negative")
 #+end_src
 #+begin_export latex
 We import \ty{flag}.
@@ -494,7 +494,7 @@ sites.
 #+begin_src go <<Calculate number of target sites, Pr. \ref{pr:sta}>>=
   ts := 0
   for _, region := range regions {
-	  ts += region.e - region.s
+	  ts += region.e - region.s + 1
   }
 #+end_src
 #+begin_export latex
@@ -575,13 +575,14 @@ We import \ty{math}.
   "math"
 #+end_src
 #+begin_export latex
-We mutate the neighbors, where the background mutation rate and the
-target mutation rate differ. The sibling link of the root of the
-neighbor coalescent is already \ty{nil}, so we don't need to change
-anything before traversing the neighbor tree.
+We mutate the neighbors, where the background mutation rate is the
+same as for the targets. However, the mutation rate in the target
+regions differs. As to the neighbor coalescent, its sibling link is
+already \ty{nil}, so we don't need to change anything before
+traversing the neighbor tree.
 #+end_export
 #+begin_src go <<Mutate neighbors, Pr. \ref{pr:sta}>>=
-  bm = float64(bs) * *optMM
+  tm = float64(ts) * *optMM
   mutate(nc, tm, bm, ran, node2mut)
 #+end_src
 #+begin_export latex
@@ -804,11 +805,15 @@ positions and the mutation patterns of the segregating sites.
   }
 #+end_src
 #+begin_export latex
-We print the haplotypes with a \ty{tabwriter}. We construct the
-\ty{tabwrite}, print the target and neighbor haplotypes to it, and
-flush it.
+The segregating sites that make up the haplotypes have positions,
+which we print first. The actual haplotypes are printed in two
+columns, a name like \ty{t1} followed by a string of zeros and
+ones. We print this haplotype table with a \ty{tabwriter}. We
+construct the \ty{tabwrite}, print the target and neighbor haplotypes
+to it, and flush it.
 #+end_export
 #+begin_src go <<Print haplotypes, Pr. \ref{pr:sta}>>=
+  //<<Print positions of segregating sites, Pr. \ref{pr:sta}>>
   w := tabwriter.NewWriter(os.Stdout, 0, 1, 1, ' ', 0)
   //<<Print target haplotypes, Pr. \ref{pr:sta}>>
   //<<Print neighbor haplotypes, Pr. \ref{pr:sta}>>
@@ -819,6 +824,16 @@ We import \ty{tabwriter}.
 #+end_export
 #+begin_src go <<Imports, Pr. \ref{pr:sta}>>=
   "text/tabwriter"
+#+end_src
+#+begin_export latex
+We iterate over the positions and print them in a single row.
+#+end_export
+#+begin_src go <<Print positions of segregating sites, Pr. \ref{pr:sta}>>=
+  fmt.Printf("Positions:")
+  for _, p := range haps.pos {
+	  fmt.Printf(" %d", p+1)
+  }
+  fmt.Printf("\n")
 #+end_src
 #+begin_export latex
 We print the haplotypes in the conventional format, one haplotype per
