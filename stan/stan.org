@@ -42,7 +42,7 @@ explanation of the purpose of \ty{stan}, and an example command.
 #+end_export
 #+begin_src go <<Set usage, Pr. \ref{pr:sta}>>=
   u := "stan [option]..."
-  p := "Simulate targets and neighbors."
+  p := "Simulate targets and neighbors with marker regions."
   e := "stan -t 7 -n 13 -r 1501-2000,3501-4000"
   clio.Usage(u, p, e)
 #+end_src
@@ -60,9 +60,9 @@ We declare a set of eight options to specify the target and neighbor sequences.
 \item \ty{-T} target directory
 \item \ty{-N} neighbor directory
 \item \ty{-l} sequence length
-\item \ty{-r} target regions
+\item \ty{-r} marker regions
 \item \ty{-m} background mutation rate, $\theta/\mbox{nucleotide}$
-\item \ty{-M} mutation rate of the target regions, $\theta/\mbox{nucleotide}$
+\item \ty{-M} mutation rate of the marker regions, $\theta/\mbox{nucleotide}$
 \end{enumerate}
 #+end_export
 #+begin_src go <<Declare options, Pr. \ref{pr:sta}>>=
@@ -71,10 +71,10 @@ We declare a set of eight options to specify the target and neighbor sequences.
   optTT := flag.String("T", "targets", "target directory")
   optNN := flag.String("N", "neighbors", "neighbor directory")
   optL := flag.Int("l", 10000, "sequence length")
-  optR := flag.String("r", "4501-5500", "target regions")
+  optR := flag.String("r", "4501-5500", "marker regions")
   optM := flag.Float64("m", 0.01, "background mutation rate, " +
 	  "theta per nucleotide")
-  optMM := flag.Float64("M", -0.1, "target region mutation " +
+  optMM := flag.Float64("M", -0.1, "marker region mutation " +
 	  "rate in neighbors, theta per nucleotide; " +
 	  "delete if negative")
 #+end_src
@@ -105,7 +105,7 @@ We also declare five auxiliary options:
 We parse the options and first respond to a request for the version by
 calling \ty{Version}, as this also stops \ty{stan}. Then we check the
 target and neighbor directories by calling the new function
-\ty{checkDir}, seed the random number generator, extract the target
+\ty{checkDir}, seed the random number generator, extract the marker
 regions, and sort them.
 #+end_export
 #+begin_src go <<Parse options, Pr. \ref{pr:sta}>>=
@@ -116,7 +116,7 @@ regions, and sort them.
   checkDir(*optTT, *optO)
   checkDir(*optNN, *optO)
   //<<Seed random number generator, Pr. \ref{pr:sta}>>
-  //<<Extract target regions, Pr. \ref{pr:sta}>>
+  //<<Extract marker regions, Pr. \ref{pr:sta}>>
   //<<Sort target regions, Pr. \ref{pr:sta}>>
 #+end_src
 #+begin_export latex
@@ -186,7 +186,7 @@ hyphens. We assume that the start and end positions supplied by the
 user are one-based, which we store zero-based, if the region passes
 our check.
 #+end_export
-#+begin_src go <<Extract target regions, Pr. \ref{pr:sta}>>=
+#+begin_src go <<Extract marker regions, Pr. \ref{pr:sta}>>=
   strs := strings.Split(*optR, ",")
   var regions []Region
   for _, str := range strs {
@@ -207,12 +207,12 @@ We import \ty{strings} and \ty{strconv}.
   "strconv"
 #+end_src
 #+begin_export latex
-If the end of a target region extends beyond the end of the sequence,
+If the end of a marker region extends beyond the end of the sequence,
 we bail with message.
 #+end_export
 #+begin_src go <<Check region, Pr. \ref{pr:sta}>>=
   if e > *optL {
-	  log.Fatalf("Region %d-%d extends beyond " +
+	  log.Fatalf("Marker region %d-%d extends beyond " +
 		  "the end of the sequence.\n", s, e)
   }
 #+end_src
@@ -231,7 +231,7 @@ We declare the type \ty{Region} as a struct with a start and an end.
   }
 #+end_src
 #+begin_export latex
-We sort the target regions by casting them to the sortable type
+We sort the marker regions by casting them to the sortable type
 \ty{RegionSlice}.
 #+end_export
 #+begin_src go <<Sort target regions, Pr. \ref{pr:sta}>>=
@@ -266,8 +266,8 @@ the \ty{Sort} interface.
 #+end_src
 #+begin_export latex
 To generate the targets and the neighbors, we generate the coalescent,
-perhaps print it, and simulate the sequences along it. If the target
-mutation rate is negative, we delete the target regions---from the
+perhaps print it, and simulate the sequences along it. If the marker
+mutation rate is negative, we delete the marker regions---from the
 neighbors, of course.
 #+end_export
 #+begin_src go <<Generate targets and neighbors, Pr. \ref{pr:sta}>>=
@@ -277,14 +277,14 @@ neighbors, of course.
   }
   //<<Simulate sequences, Pr. \ref{pr:sta}>>
   if *optMM < 0 {
-	  //<<Delete target regions, Pr. \ref{pr:sta}>>
+	  //<<Delete marker regions, Pr. \ref{pr:sta}>>
   }
 #+end_src
 #+begin_export latex
 The coalescent is constructed from a target coalescent, \ty{tc}, and a
 neighbor coalescent, \ty{nc}. We generate each partial coalescent by
 calling the function \ty{genPartCoal} with the partial sample size,
-$\np$ the total sample size, $n$, the base of a leaf label, and the
+$\np$, the total sample size, $n$, the base of a leaf label, and the
 random number generator. Then we coalesce the two partial coalescents
 into the final coalescent. We determine the branch lengths of that
 tree and determine the mutations along its branches based on their
@@ -303,7 +303,8 @@ Inside \ty{genPartCoal}, we generate the tree, which is represented by
 its root node. We generate the node times and the tree topology.
 #+end_export
 #+begin_src go <<Functions, Pr. \ref{pr:sta}>>=
-  func genPartCoal(np, n int, b string, ran *rand.Rand) *nwk.Node {
+  func genPartCoal(np, n int, b string,
+	  ran *rand.Rand) *nwk.Node {
 	  var root *nwk.Node
 	  //<<Generate tree, Pr. \ref{pr:sta}>>
 	  //<<Generate node times, Pr. \ref{pr:sta}>>
@@ -312,9 +313,10 @@ its root node. We generate the node times and the tree topology.
   }
 #+end_src
 #+begin_export latex
-The partial coalescent tree is an array of $2\np-1$ nodes. The first
-$n$ of these are the leaves, which we label by appending consecutive
-numbers to the label base. The last leaf is the root.
+The partial coalescent tree is initially an array of $2\np-1$
+nodes. The first $n$ of these are the leaves, which we label by
+appending consecutive numbers to the label base. The last leaf is the
+root.
 #+end_export
 #+begin_src go <<Generate tree, Pr. \ref{pr:sta}>>=
   tree := make([]*nwk.Node, 2*np-1)
@@ -344,9 +346,9 @@ default node time is zero, we don't have to do anything here. The
 times of the remaining nodes are random values that are exponentially
 distributed with expectation $f\times{i\choose 2}$, where $i$ is the
 number of active lineages and $f = n/\np$ corrects for this being a
-partial coalescent (lines 4--12 in Algorithm~\ref{alg:tim}). To store
-the times, we abuse the \ty{Length} field, before we later return it
-to its original meaning of branch length.
+partial coalescent (lines 4--12 in Algorithm~\ref{alg:tim}). We store
+the times in the \ty{Length} field, before we later return it to its
+original meaning of branch length.
 #+end_export
 #+begin_src go <<Generate node times, Pr. \ref{pr:sta}>>=
   for i := 0; i < np; i++ { tree[i].HasLength = true }
@@ -478,57 +480,57 @@ working from the leaves upwards.
 #+begin_export latex
 The branch lengths determine the number of mutations based on the
 mutation rate and the number of sites. So we first calculate the
-number of target sites and the number of background sites. Then we
+number of marker sites and the number of background sites. Then we
 mutate the targets followed by the neighbors.
 #+end_export
 #+begin_src go <<Convert branch lengths to mutations, Pr. \ref{pr:sta}>>=
-  //<<Calculate number of target sites, Pr. \ref{pr:sta}>>
+  //<<Calculate number of marker sites, Pr. \ref{pr:sta}>>
   //<<Calculate number of background sites, Pr. \ref{pr:sta}>>
   //<<Mutate targets, Pr. \ref{pr:sta}>>
   //<<Mutate neighbors, Pr. \ref{pr:sta}>>
 #+end_src
 #+begin_export latex
-We sum the lengths of the target regions to find the number of target
+We sum the lengths of the marker regions to find the number of marker
 sites.
 #+end_export
-#+begin_src go <<Calculate number of target sites, Pr. \ref{pr:sta}>>=
-  ts := 0
+#+begin_src go <<Calculate number of marker sites, Pr. \ref{pr:sta}>>=
+  ms := 0
   for _, region := range regions {
-	  ts += region.e - region.s + 1
+	  ms += region.e - region.s + 1
   }
 #+end_src
 #+begin_export latex
 The number of background sites is the sequence length minus the number
-of target sites.
+of marker sites.
 #+end_export
 #+begin_src go <<Calculate number of background sites, Pr. \ref{pr:sta}>>=
-  bs := *optL - ts
+  bs := *optL - ms
 #+end_src
 #+begin_export latex
 When we mutate the targets, we associate two mutation counts with each
-node, one for the background, the other for the target regions. So we
+node, one for the background, the other for the marker regions. So we
 declare the type \ty{Mutation} for holding these two mutation counts.
 #+end_export
 #+begin_src go <<Types, Pr. \ref{pr:sta}>>=
   type Mutation struct {
-	  background, target int
+	  background, marker int
   }
 #+end_src
 #+begin_export latex
 For the target sequences, the mutation rate per site is the same for
-the background and the target regions. We call \ty{mutate} on the
-target coalescent with that mutation rate for background and target
+the background and the marker regions. We call \ty{mutate} on the
+target coalescent with that mutation rate for background and marker
 regions, and a map for holding the mutations per node. Note that we
 need to isolate the target root from its sibling the neighbor root
 before traversing the target coalescent. After the traversal we
 restore the sibling link.
 #+end_export
 #+begin_src go <<Mutate targets, Pr. \ref{pr:sta}>>=
-  tm := float64(ts) * *optM
+  mm := float64(ms) * *optM
   bm := float64(bs) * *optM
   node2mut := make(map[int]Mutation)
   tc.Sib = nil
-  mutate(tc, tm, bm, ran, node2mut)
+  mutate(tc, mm, bm, ran, node2mut)
   tc.Sib = nc
 #+end_src
 #+begin_export latex
@@ -537,15 +539,15 @@ background and target mutations by calling \ty{calcMut}. The two
 mutation counts are stored as a new entry in the mutation map.
 #+end_export
 #+begin_src go <<Functions, Pr. \ref{pr:sta}>>=
-  func mutate(v *nwk.Node, tm, bm float64, r *rand.Rand,
+  func mutate(v *nwk.Node, mm, bm float64, r *rand.Rand,
 	  n2m map[int]Mutation) {
 	  if v == nil { return }
-	  tn := calcMut(tm, v.Length, r)
+	  mn := calcMut(mm, v.Length, r)
 	  bn := calcMut(bm, v.Length, r)
-	  u := Mutation{target: tn, background: bn}
+	  u := Mutation{marker: mn, background: bn}
 	  n2m[v.Id] = u
-	  mutate(v.Child, tm, bm, r, n2m)
-	  mutate(v.Sib, tm, bm, r, n2m)
+	  mutate(v.Child, mm, bm, r, n2m)
+	  mutate(v.Sib, mm, bm, r, n2m)
   }
 #+end_src
 #+begin_export latex
@@ -576,14 +578,14 @@ We import \ty{math}.
 #+end_src
 #+begin_export latex
 We mutate the neighbors, where the background mutation rate is the
-same as for the targets. However, the mutation rate in the target
+same as for the targets. However, the mutation rate in the marker
 regions differs. As to the neighbor coalescent, its sibling link is
 already \ty{nil}, so we don't need to change anything before
 traversing the neighbor tree.
 #+end_export
 #+begin_src go <<Mutate neighbors, Pr. \ref{pr:sta}>>=
-  tm = float64(ts) * *optMM
-  mutate(nc, tm, bm, ran, node2mut)
+  mm = float64(ms) * *optMM
+  mutate(nc, mm, bm, ran, node2mut)
 #+end_src
 #+begin_export latex
 We can print our newly minted coalescent by simply calling a print
@@ -630,15 +632,15 @@ and at the number of targets for the neighbor coalescent.
 To generate the haplotypes, we first construct a data structure to
 hold them.  Each haplotype also has a random position along the final
 DNA sequence, which has length \ty{*optL}. If the mutation affects a
-target region, we draw a random number out of \ty{ts} target sites and
+marker region, we draw a random number out of \ty{ms} marker sites and
 need a map to convert that to a position along the final sequence;
-similarly for background mutations. So we construct a target position
+similarly for background mutations. So we construct a marker position
 map and a background position map. Then we traverse the tree to
 construct the haplotypes.
 #+end_export
 #+begin_src go <<Generate haplotypes, Pr. \ref{pr:sta}>>=
   //<<Construct haplotype data structure, Pr. \ref{pr:sta}>>
-  //<<Construct target position map, Pr. \ref{pr:sta}>>
+  //<<Construct marker position map, Pr. \ref{pr:sta}>>
   //<<Construct background position map, Pr. \ref{pr:sta}>>
   //<<Traverse tree to construct haplotypes, Pr. \ref{pr:sta}>>
 #+end_src
@@ -660,7 +662,7 @@ sequence. Table~\ref{tab:hap} summarizes the haplotype structure.
 
 To represent haplotypes, we declare a structure to hold segregating
 sites and positions. We also store in this structure seven auxiliary
-variables: the number of target and background sites, the number of
+variables: the number of marker and background sites, the number of
 targets and neighbors, the maps between nodes and mutations and
 between leaves and haplotypes, and the random number generator.
 #+end_export
@@ -668,7 +670,7 @@ between leaves and haplotypes, and the random number generator.
   type Haplotypes struct {
 	  hap [][]byte
 	  pos []int
-	  ts, bs, tn, nn int
+	  ms, bs, mn, nn int
 	  n2m map[int]Mutation
 	  l2h map[int]int
 	  r *rand.Rand
@@ -680,24 +682,24 @@ store the values of the auxiliary fields.
 #+end_export
 #+begin_src go <<Construct haplotype data structure, Pr. \ref{pr:sta}>>=
   haps := new(Haplotypes)
-  haps.ts = ts
+  haps.ms = ms
   haps.bs = bs
-  haps.tn = *optT
+  haps.mn = *optT
   haps.nn = *optN
   haps.l2h = leaf2hap
   haps.n2m = node2mut
   haps.r = ran
 #+end_src
 #+begin_export latex
-For the target position map we iterate over the target regions and map
+For the marker position map we iterate over the marker regions and map
 each position to a consecutive integer.
 #+end_export
-#+begin_src go <<Construct target position map, Pr. \ref{pr:sta}>>=
-  t2p := make(map[int]int)
+#+begin_src go <<Construct marker position map, Pr. \ref{pr:sta}>>=
+  m2p := make(map[int]int)
   i := 0
   for _, region := range regions {
 	  for j := region.s; j <= region.e; j++ {
-		  t2p[i] = j
+		  m2p[i] = j
 		  i++
 	  }
   }
@@ -711,7 +713,7 @@ consecutive integers.
   b2p := make(map[int]int)
   i = 0
   for j := 0; j < *optL; j++ {
-	  if _, ok := t2p[j]; !ok {
+	  if _, ok := m2p[j]; !ok {
 		  b2p[i] = j
 		  i++
 	  }
@@ -720,39 +722,39 @@ consecutive integers.
 #+begin_export latex
 We generate the haplotypes by calling the recursive function
 \ty{genHaps}. This takes as arguments the global root, the haplotypes
-variable, and the two maps of target and background positions.
+variable, and the two maps of marker and background positions.
 #+end_export
 #+begin_src go <<Traverse tree to construct haplotypes, Pr. \ref{pr:sta}>>=
-  genHaps(root, haps, t2p, b2p)
+  genHaps(root, haps, m2p, b2p)
 #+end_src
 #+begin_export latex
 #+end_export
 #+begin_export latex
-Inside \ty{genHaps} we iterate over the target and background
+Inside \ty{genHaps} we iterate over the marker and background
 mutations.
 #+end_export
 #+begin_src go <<Functions, Pr. \ref{pr:sta}>>=
-  func genHaps(v *nwk.Node, haps *Haplotypes, t2p,
+  func genHaps(v *nwk.Node, haps *Haplotypes, m2p,
 	  b2p map[int]int) {
 	  if v == nil { return }
-	  //<<Iterate over target mutations, Pr. \ref{pr:sta}>>
+	  //<<Iterate over marker mutations, Pr. \ref{pr:sta}>>
 	  //<<Iterate over background mutations, Pr. \ref{pr:sta}>>
-	  genHaps(v.Child, haps, t2p, b2p)
-	  genHaps(v.Sib,   haps, t2p, b2p)
+	  genHaps(v.Child, haps, m2p, b2p)
+	  genHaps(v.Sib,   haps, m2p, b2p)
   }
 #+end_src
 #+begin_export latex
-We look up the number of target mutations and the sample size. Then we
+We look up the number of marker mutations and the sample size. Then we
 iterate over the mutations, and for each one generate and store its
 random position in the DNA sequence. We also record the mutation
 pattern of the segregating site.
 #+end_export
-#+begin_src go <<Iterate over target mutations, Pr. \ref{pr:sta}>>=
-  m := haps.n2m[v.Id].target
-  n := haps.tn + haps.nn
+#+begin_src go <<Iterate over marker mutations, Pr. \ref{pr:sta}>>=
+  m := haps.n2m[v.Id].marker
+  n := haps.mn + haps.nn
   for i := 0; i < m; i++ {
-	  p := haps.r.Intn(haps.ts)
-	  haps.pos = append(haps.pos, t2p[p])
+	  p := haps.r.Intn(haps.ms)
+	  haps.pos = append(haps.pos, m2p[p])
 	  ss := make([]byte, n)
 	  //<<Record segregating site, Pr. \ref{pr:sta}>>
 	  haps.hap = append(haps.hap, ss)
@@ -786,7 +788,7 @@ haplotype identified by the leaf's identifier.
   }
 #+end_src
 #+begin_export latex
-We are done with the mutations in the target regions, so we look up
+We are done with the mutations in the marker regions, so we look up
 the number of background mutations and iterate over them to get their
 positions and the mutation patterns of the segregating sites.
 #+end_export
@@ -807,10 +809,9 @@ positions and the mutation patterns of the segregating sites.
 #+begin_export latex
 The segregating sites that make up the haplotypes have positions,
 which we print first. The actual haplotypes are printed in two
-columns, a name like \ty{t1} followed by a string of zeros and
-ones. We print this haplotype table with a \ty{tabwriter}. We
-construct the \ty{tabwrite}, print the target and neighbor haplotypes
-to it, and flush it.
+columns, a name followed by a string of zeros and ones. We print this
+haplotype table with a \ty{tabwriter}. We construct the \ty{tabwrite},
+print the target and neighbor haplotypes to it, and flush it.
 #+end_export
 #+begin_src go <<Print haplotypes, Pr. \ref{pr:sta}>>=
   //<<Print positions of segregating sites, Pr. \ref{pr:sta}>>
@@ -826,7 +827,8 @@ We import \ty{tabwriter}.
   "text/tabwriter"
 #+end_src
 #+begin_export latex
-We iterate over the positions and print them in a single row.
+We iterate over the positions of the segregating sites and print them
+in a single row.
 #+end_export
 #+begin_src go <<Print positions of segregating sites, Pr. \ref{pr:sta}>>=
   fmt.Printf("Positions:")
@@ -842,7 +844,7 @@ sites form the rows. We call the target haplotypes \ty{t1}, \ty{t2},
 and so on.
 #+end_export
 #+begin_src go <<Print target haplotypes, Pr. \ref{pr:sta}>>=
-  for j := 0; j < haps.tn; j++ {
+  for j := 0; j < haps.mn; j++ {
 	  fmt.Fprintf(w, "t%d\t", j+1)
 	  for i := 0; i < len(haps.hap); i++ {
 		  c := strconv.Itoa(int(haps.hap[i][j]))
@@ -856,8 +858,8 @@ Similarly, we print the neighbor haplotypes, which we call \ty{n1},
 \ty{n2}, etc.
 #+end_export
 #+begin_src go <<Print neighbor haplotypes, Pr. \ref{pr:sta}>>=
-  for j := haps.tn; j < haps.tn+haps.nn; j++ {
-	  fmt.Fprintf(w, "n%d\t", j - haps.tn + 1)
+  for j := haps.mn; j < haps.mn+haps.nn; j++ {
+	  fmt.Fprintf(w, "n%d\t", j - haps.mn + 1)
 	  for i := 0; i < len(haps.hap); i++ {
 		  c := strconv.Itoa(int(haps.hap[i][j]))
 		  fmt.Fprintf(w, "%s", c)
@@ -935,13 +937,14 @@ if the nucleotide has mutated.
   }
 #+end_src
 #+begin_export latex
-Instead of mutating the target regions, the user might have opted for
-deleting them. In that case we iterate over the target regions and
-delete them from the neighbor sequences accordingly by copying the
-spacers in between. After the deletion we mark the new end of the
-neighbor sequences.
+Instead of mutating the target regions, they might be deleted. In
+fact, after some experimentation, I decided to make deletion the
+default. For deletion we iterate over the marker regions and delete
+them from the neighbor sequences by copying the spacers in
+between. After the deletion, the neighbor sequences are shorter than
+before and we mark their new ends.
 #+end_export
-#+begin_src go <<Delete target regions, Pr. \ref{pr:sta}>>=
+#+begin_src go <<Delete marker regions, Pr. \ref{pr:sta}>>=
   start := 0
   row := 0
   cols := len(al[0])
@@ -951,7 +954,7 @@ neighbor sequences.
 	  start = region.e + 1
   }
   //<<Copy last spacer region, Pr. \ref{pr:sta}>>
-  //<<Mark end of neighbor sequences, Pr. \ref{pr:sta}>>
+  //<<Mark ends of neighbor sequences, Pr. \ref{pr:sta}>>
 #+end_src
 #+begin_export latex
 We walk from the start to the end of the background sequence and copy
@@ -973,9 +976,9 @@ The last spacer region ends at the end of the sequence.
   //<<Copy spacer region, Pr. \ref{pr:sta}>>
 #+end_src
 #+begin_export latex
-We mark the new end of the neighbors with zeros as nucleotides.
+We mark the new ends of the neighbors with zeros as nucleotides.
 #+end_export
-#+begin_src go <<Mark end of neighbor sequences, Pr. \ref{pr:sta}>>=
+#+begin_src go <<Mark ends of neighbor sequences, Pr. \ref{pr:sta}>>=
   if row < len(al) {
 	  for j := *optT; j < cols; j++ {
 		  al[row][j] = 0
