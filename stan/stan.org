@@ -74,7 +74,7 @@ We declare a set of eight options to specify the target and neighbor sequences.
   optR := flag.String("r", "4501-5500", "target regions")
   optM := flag.Float64("m", 0.01, "background mutation rate, " +
 	  "theta per nucleotide")
-  optMM := flag.Float64("M", 5.0, "target region mutation " +
+  optMM := flag.Float64("M", -0.1, "target region mutation " +
 	  "rate in neighbors, theta per nucleotide; " +
 	  "delete if negative")
 #+end_src
