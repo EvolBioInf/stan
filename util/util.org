@@ -1,11 +1,10 @@
 #+begin_src latex
-  The package \ty{util} collects utility functions. Its outline
+  !The package \ty{util} collects utility functions for the package \ty{stan}.
+  Its outline
   provides hooks for imports, variables, and functions.
   \bpa{util}{pa:util}
 #+end_src
 #+begin_src go <<util.go>>=
-  // Package util provides utility functions for the program
-  // \ty{stan}.
   package util
 
   import (
@@ -20,7 +19,6 @@
   !\ty{Version} prints program information and exits.
 #+end_src
 #+begin_src go <<Functions, Pa. \ref{pa:util}>>=
-  // PrintInfo prints program information and exits.
   func Version() {
 	  author := "Bernhard Haubold"
 	  email := "haubold@evolbio.mpg.de"

@@ -3,7 +3,7 @@ all : util
 util: util.go
 	go build util.go
 util.go: util.org
-	bash ../scripts/org2nw util.org | notangle -Rutil.go | gofmt > util.go
+	awk -f ../scripts/preTangle.awk util.org | bash ../scripts/org2nw | notangle -Rutil.go | gofmt > util.go
 .PHONY: test
 test: util_test.go util.go
 	go test -v
