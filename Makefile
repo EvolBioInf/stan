@@ -1,4 +1,4 @@
-progs = stan
+progs = stan rad
 packs = util
 
 all:

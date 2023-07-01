@@ -45,3 +45,9 @@ between targets and neighbors. We then simulate sequences along that
 coalescent and delete marker regions from the neighbors. Finally, the
 target and the neighbor sequences are written to into separate files
 in separate directories.
+
+The deletions created by \ty{stan} are set by the user and affect all
+neighbors equally. To generate more complicated deletion patterns, I
+also supply the program \ty{rad}, for ``random deletion''. The program
+\ty{rad} takes as input a sequence and deletes a Poisson-distributed
+number of regions of normally-distributed lengths.
