@@ -17,7 +17,6 @@ rad/rad
 stan/neighbors
 stan/stan
 stan/targets
-stan/r*.txt
 stan/*.db
 tut/cli.sh
 tut/*.db
