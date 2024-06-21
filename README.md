@@ -11,23 +11,14 @@ extracted by programs for neighbor-based marker discovery, for example
 [Bernhard Haubold](http://guanine.evolbio.mpg.de/), `haubold@evolbio.mpg.de`
 
 ## Make the Programs
-Make sure you've installed the packages `git`, `golang`, and `make`. Then execute,
+Setup the environment and construct the binaries.
 
 ```
+bash scripts/setup.sh
 make
 ```
 
 The directory `bin` now contains the binaries.
 
-## Make the Documentation
-Make sure you've installed the packages `git`, `make`, `texlive-science`,
-`texlive-pstricks`, `texlive-latex-extra`,
-and `texlive-fonts-extra`. Then execute,
-
-```
-make doc
-```
-
-The documentation is now in `doc/stanDoc.pdf`.
 ## License
 [GNU General Public License](https://www.gnu.org/licenses/gpl.html)
