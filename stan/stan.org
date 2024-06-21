@@ -692,28 +692,31 @@ store the values of the auxiliary fields.
 #+end_src
 #+begin_export latex
 For the marker position map we iterate over the marker regions and map
-each position to a consecutive integer.
+each position to a consecutive integer. We also record the marker
+positions in the map \ty{isMarker}.
 #+end_export
 #+begin_src go <<Construct marker position map, Pr. \ref{pr:sta}>>=
   m2p := make(map[int]int)
+  isMarker := make(map[int]bool)
   i := 0
   for _, region := range regions {
 	  for j := region.s; j <= region.e; j++ {
 		  m2p[i] = j
 		  i++
+		  isMarker[j] = true
 	  }
   }
 #+end_src
 #+begin_export latex
 For the background position map we iterate across all sequence
-positions and assign the positions that are not target positions to
+positions and assign the positions that are not marker positions to
 consecutive integers.
 #+end_export
 #+begin_src go <<Construct background position map, Pr. \ref{pr:sta}>>=
   b2p := make(map[int]int)
   i = 0
   for j := 0; j < *optL; j++ {
-	  if _, ok := m2p[j]; !ok {
+	  if !isMarker[j] {
 		  b2p[i] = j
 		  i++
 	  }
@@ -937,7 +940,7 @@ if the nucleotide has mutated.
   }
 #+end_src
 #+begin_export latex
-Instead of mutating the target regions, they might be deleted. In
+Instead of mutating the marker regions, they might be deleted. In
 fact, after some experimentation, I decided to make deletion the
 default. For deletion we iterate over the marker regions and delete
 them from the neighbor sequences by copying the spacers in
