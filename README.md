@@ -14,7 +14,7 @@ randomly delete regions from sequences.
 
 ## Make the Programs
 Setup the environment by running the script
-(`setup.sh`)[scripts/setup.sh], and construct the binaries.
+[`setup.sh`](scripts/setup.sh), and construct the binaries.
 
 ```
 bash scripts/setup.sh
