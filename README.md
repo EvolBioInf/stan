@@ -13,7 +13,8 @@ randomly delete regions from sequences.
 [Bernhard Haubold](http://guanine.evolbio.mpg.de/), `haubold@evolbio.mpg.de`
 
 ## Make the Programs
-Setup the environment and construct the binaries.
+Setup the environment by running the script
+(`setup.sh`)[scripts/setup.sh], and construct the binaries.
 
 ```
 bash scripts/setup.sh
