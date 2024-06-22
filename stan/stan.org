@@ -1110,9 +1110,11 @@ To test the remaining options, we wrap the calls to \ty{stan} in shell
 scripts, which then output the result sequences. We call the scripts
 \ty{test1.sh}, \ty{test2.sh}, and so one, and begin with one that runs
 with only default options, except that we allow the directories we
-just created to be overwritten.
+just created to be overwritten. To standardize testing, we explicitly
+set the locale for the script to POSIX.
 #+end_export
 #+begin_src sh <<test1.sh>>=
+  export LC_ALL=POSIX
   ./stan -s 3 -o
   cat targets/* neighbors/*
 #+end_src
@@ -1120,6 +1122,7 @@ just created to be overwritten.
 We reduce the target mutation rate to 1\%.
 #+end_export
 #+begin_src sh <<test2.sh>>=
+  export LC_ALL=POSIX
   ./stan -s 3 -o -M 0.01
   cat targets/* neighbors/*
 #+end_src
@@ -1128,6 +1131,7 @@ We call the neighbors directory \ty{otherNeighbors} and remove it
 again.
 #+end_export
 #+begin_src sh <<test3.sh>>=
+  export LC_ALL=POSIX
   ./stan -s 3 -o -N otherNeighbors
   cat targets/* otherNeighbors/*
   rm -r otherNeighbors
@@ -1136,6 +1140,7 @@ again.
 We call the target directory \ty{otherTargets} and remove it again.
 #+end_export
 #+begin_src sh <<test4.sh>>=
+  export LC_ALL=POSIX
   ./stan -s 3 -o -T otherTargets
   cat otherTargets/* neighbors/*
   rm -r otherTargets
@@ -1144,6 +1149,7 @@ We call the target directory \ty{otherTargets} and remove it again.
 We reduce the sequence length.
 #+end_export
 #+begin_src sh <<test5.sh>>=
+  export LC_ALL=POSIX
   ./stan -s 3 -o -l 7500
   cat targets/* neighbors/*
 #+end_src
@@ -1151,6 +1157,7 @@ We reduce the sequence length.
 We double the background mutation rate.
 #+end_export
 #+begin_src sh <<test6.sh>>=
+  export LC_ALL=POSIX
   ./stan -s 3 -o -m 0.02
   cat targets/* neighbors/*
 #+end_src
@@ -1158,6 +1165,7 @@ We double the background mutation rate.
 We halve the number of neighbors.
 #+end_export
 #+begin_src sh <<test7.sh>>=
+  export LC_ALL=POSIX
   ./stan -s 3 -o -n 5
   cat targets/* neighbors/*
 #+end_src
@@ -1165,6 +1173,7 @@ We halve the number of neighbors.
 We target two new regions.
 #+end_export
 #+begin_src sh <<test8.sh>>=
+  export LC_ALL=POSIX
   ./stan -s 3 -o -r 1501-2000,3501-4000
   cat targets/* neighbors/*
 #+end_src
@@ -1173,6 +1182,7 @@ We halve the number of targets. Since this is our last testing script,
 we also remove the target and neighbor directories at the end.
 #+end_export
 #+begin_src sh <<test9.sh>>=
+  export LC_ALL=POSIX
   ./stan -s 3 -o -t 5
   cat targets/* neighbors/*
   rm -r targets neighbors
