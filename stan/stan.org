@@ -340,23 +340,34 @@ We import \ty{nwk}.
   \caption{Generate node times in partial coalescent.}\label{alg:tim}
   \input{../stan/algCoalTimes}
 \end{algorithm}
+For the computation of node times we imagine that the target and
+neighbor genomes are sampled from two separate populations until they
+find their most recent common ancestor. Then these two populations are
+merged and their global most recent common ancestor is found.
+
+Put a bit more formally, we model with zero migration between targets
+and neighbors until both the targets and the neighbors have found
+their most recent common ancestor, at which point the two populations
+form one panmictic population.
+
 The computation of node times starts by setting the leaf times to
 zero, the present (lines 1--3 in Algorithm~\ref{alg:tim}). Since the
 default node time is zero, we don't have to do anything here. The
 times of the remaining nodes are random values that are exponentially
-distributed with expectation $f\times{i\choose 2}$, where $i$ is the
-number of active lineages and $f = n/\np$ corrects for this being a
-partial coalescent (lines 4--12 in Algorithm~\ref{alg:tim}). We store
-the times in the \ty{Length} field, before we later return it to its
-original meaning of branch length.
+distributed with expectation ${i\choose 2}\times 2$ (lines 3--11 in
+Algorithm~\ref{alg:tim}). The factor 2 in the expectation halves each
+time. Otherwise the waiting time to the global coalescence would on
+average be the same as the waiting time to the last within patch
+coalescences. We store the times in the \ty{Length} field, before we
+later return it to its original meaning of branch length.
 #+end_export
 #+begin_src go <<Generate node times, Pr. \ref{pr:sta}>>=
   for i := 0; i < np; i++ { tree[i].HasLength = true }
   t := 0.0
-  f := float64(np) / float64(n)
   for i := np; i > 1; i-- {
-	  lambda := f * float64(np * (np-1) / 2)
-	  t += ran.ExpFloat64() / lambda
+	  lambda := 2.0 * float64(i * (i-1) / 2) 
+	  r := ran.ExpFloat64() / lambda 
+	  t += r
 	  j := 2 * np - i
 	  tree[j].Length = t
 	  tree[j].HasLength = true
@@ -451,7 +462,6 @@ at the global root.
 	  root.Length = nc.Length
   }
   root.Length += ran.ExpFloat64()
-
 #+end_src
 #+begin_export latex
 We determine the branch lengths by traversing the tree using the

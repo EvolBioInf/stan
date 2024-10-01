@@ -7,9 +7,8 @@
    \STATE $\mathrm{tree}[i].\mathrm{time}\leftarrow 0$
    \ENDFOR
    \STATE $t\leftarrow 0$
-   \STATE $f\leftarrow n/\np$
 \FOR{$i\leftarrow \np$ \TO $2$}
-   \STATE $\lambda\leftarrow f{i\choose 2}$ \COMMENT{Parameter for
+   \STATE $\lambda\leftarrow 2{i\choose 2}$ \COMMENT{Parameter for
      exponential distribution}
    \STATE $r\leftarrow \mathrm{rexp}(\lambda)$
    \COMMENT{Random time to coalescence with expectation $1/\lambda$}

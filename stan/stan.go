@@ -72,10 +72,10 @@ func genPartCoal(np, n int, b string,
 		tree[i].HasLength = true
 	}
 	t := 0.0
-	f := float64(np) / float64(n)
 	for i := np; i > 1; i-- {
-		lambda := f * float64(np*(np-1)/2)
-		t += ran.ExpFloat64() / lambda
+		lambda := 2.0 * float64(i*(i-1)/2)
+		r := ran.ExpFloat64() / lambda
+		t += r
 		j := 2*np - i
 		tree[j].Length = t
 		tree[j].HasLength = true
@@ -255,7 +255,6 @@ func main() {
 		root.Length = nc.Length
 	}
 	root.Length += ran.ExpFloat64()
-
 	branchLength(root)
 	ms := 0
 	for _, region := range regions {
