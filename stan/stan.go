@@ -243,13 +243,15 @@ func main() {
 	}
 	sort.Sort(RegionSlice(regions))
 	n := *optT + *optN
-	tc := genPartCoal(*optT, n, "t", ran)
-	nc := genPartCoal(*optN, n, "n", ran)
+	pt := (*optTT)[0:1]
+	pn := (*optNN)[0:1]
+	tc := genPartCoal(*optT, n, pt, ran)
+	nc := genPartCoal(*optN, n, pn, ran)
 	root := nwk.NewNode()
 	tc.Parent = root
 	nc.Parent = root
-	tc.Sib = nc
-	root.Child = tc
+	root.Child = nc
+	nc.Sib = tc
 	root.Length = tc.Length
 	if root.Length < nc.Length {
 		root.Length = nc.Length
@@ -264,11 +266,11 @@ func main() {
 	mm := float64(ms) * *optM
 	bm := float64(bs) * *optM
 	node2mut := make(map[int]Mutation)
-	tc.Sib = nil
 	mutate(tc, mm, bm, ran, node2mut)
-	tc.Sib = nc
 	mm = float64(ms) * *optMM
+	nc.Sib = nil
 	mutate(nc, mm, bm, ran, node2mut)
+	nc.Sib = tc
 	if *optC {
 		fmt.Printf("%s\n", root)
 	}
@@ -414,6 +416,6 @@ func main() {
 		seq := fasta.NewSequence(h, d)
 		neighbors = append(neighbors, seq)
 	}
-	printSeqs(targets, *optTT, "t")
-	printSeqs(neighbors, *optNN, "n")
+	printSeqs(targets, *optTT, pt)
+	printSeqs(neighbors, *optNN, pn)
 }

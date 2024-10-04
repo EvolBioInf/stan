@@ -284,16 +284,18 @@ neighbors, of course.
 The coalescent is constructed from a target coalescent, \ty{tc}, and a
 neighbor coalescent, \ty{nc}. We generate each partial coalescent by
 calling the function \ty{genPartCoal} with the partial sample size,
-$\np$, the total sample size, $n$, the base of a leaf label, and the
-random number generator. Then we coalesce the two partial coalescents
-into the final coalescent. We determine the branch lengths of that
-tree and determine the mutations along its branches based on their
-lengths.
+$\np$, the total sample size, $n$, the prefix of each leaf label, and
+the random number generator. Then we coalesce the two partial
+coalescents into the final coalescent. We determine the branch lengths
+of that tree and determine the mutations along its branches based on
+their lengths.
 #+end_export
 #+begin_src go <<Generate coalescent, Pr. \ref{pr:sta}>>=
   n := *optT + *optN
-  tc := genPartCoal(*optT, n, "t", ran)
-  nc := genPartCoal(*optN, n, "n", ran)
+  pt := (*optTT)[0:1]
+  pn := (*optNN)[0:1]
+  tc := genPartCoal(*optT, n, pt, ran)
+  nc := genPartCoal(*optN, n, pn, ran)
   //<<Coalesce coalescents, Pr. \ref{pr:sta}>>
   //<<Determine branch lengths, Pr. \ref{pr:sta}>>
   //<<Convert branch lengths to mutations, Pr. \ref{pr:sta}>>
@@ -440,14 +442,34 @@ which we also set a time.
 #+end_src
 #+begin_export latex
 We create the root and join it to the roots of the target and neighbor
-coalescents.
+coalescents. Specifically, the root's child link points to the
+neighbor coalescent, while the neighbor coalescent's sibling link
+points to the target coalescent. Figure~\ref{fig:top} shows the
+topology around the root we have thus just created.
+\begin{figure}
+  \begin{center}
+    \psset{nodesep=2pt,rowsep=0.5cm,colsep=0.5cm}
+    \begin{psmatrix}
+      &&\circlenode{root}{\ty{root}}\\
+      &\circlenode{nc}{\ty{nc}} & & \circlenode{tc}{\ty{tc}}\\
+      \Rnode{c1}{} && \Rnode{c2}{}
+      \ncline{->}{root}{nc}
+      \ncline{->}{nc}{tc}
+      \ncline{->}{nc}{c1}
+      \ncline{->}{tc}{c2}
+    \end{psmatrix}
+  \end{center}
+  \caption{The topology around the root of the final coalescent
+    consisting of the neighbors coalescent, \ty{nc}, and the targets
+    coalescent, \ty{tc}.}\label{fig:top}
+\end{figure}
 #+end_export
 #+begin_src go <<Add root to coalescent, Pr. \ref{pr:sta}>>=
   root := nwk.NewNode()
   tc.Parent = root
   nc.Parent = root
-  tc.Sib = nc
-  root.Child = tc
+  root.Child = nc
+  nc.Sib = tc
 #+end_src
 #+begin_export latex
 The waiting time to the last coalescent is an exponentially
@@ -530,18 +552,13 @@ declare the type \ty{Mutation} for holding these two mutation counts.
 For the target sequences, the mutation rate per site is the same for
 the background and the marker regions. We call \ty{mutate} on the
 target coalescent with that mutation rate for background and marker
-regions, and a map for holding the mutations per node. Note that we
-need to isolate the target root from its sibling the neighbor root
-before traversing the target coalescent. After the traversal we
-restore the sibling link.
+regions, and a map for holding the mutations per node.
 #+end_export
 #+begin_src go <<Mutate targets, Pr. \ref{pr:sta}>>=
   mm := float64(ms) * *optM
   bm := float64(bs) * *optM
   node2mut := make(map[int]Mutation)
-  tc.Sib = nil
   mutate(tc, mm, bm, ran, node2mut)
-  tc.Sib = nc
 #+end_src
 #+begin_export latex
 The function \ty{mutate} visits every node and calculates its
@@ -589,13 +606,16 @@ We import \ty{math}.
 #+begin_export latex
 We mutate the neighbors, where the background mutation rate is the
 same as for the targets. However, the mutation rate in the marker
-regions differs. As to the neighbor coalescent, its sibling link is
-already \ty{nil}, so we don't need to change anything before
-traversing the neighbor tree.
+regions differs.  Note that we need to isolate the neighbor root from
+its sibling the target root before traversing the neighbor coalescent
+(see Figure~\ref{fig:top}). After the traversal we restore the sibling
+link.
 #+end_export
 #+begin_src go <<Mutate neighbors, Pr. \ref{pr:sta}>>=
   mm = float64(ms) * *optMM
+  nc.Sib = nil
   mutate(nc, mm, bm, ran, node2mut)
+  nc.Sib = tc
 #+end_src
 #+begin_export latex
 We can print our newly minted coalescent by simply calling a print
@@ -1009,8 +1029,8 @@ of the files.
   neighbors := make([]*fasta.Sequence, 0)
   //<<Construct target slice, Pr. \ref{pr:sta}>>
   //<<Construct neighbor slice, Pr. \ref{pr:sta}>>
-  printSeqs(targets, *optTT, "t")
-  printSeqs(neighbors, *optNN, "n")
+  printSeqs(targets, *optTT, pt)
+  printSeqs(neighbors, *optNN, pn)
 #+end_src
 #+begin_export latex
 We import \ty{fasta}.
