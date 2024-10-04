@@ -394,7 +394,7 @@ func main() {
 	targets := make([]*fasta.Sequence, 0)
 	neighbors := make([]*fasta.Sequence, 0)
 	for i := 0; i < *optT; i++ {
-		h := "t" + strconv.Itoa(i+1)
+		h := pt + strconv.Itoa(i+1)
 		d := make([]byte, 0)
 		for j := 0; j < len(al); j++ {
 			d = append(d, al[j][i])
@@ -404,7 +404,7 @@ func main() {
 	}
 	n = *optT + *optN
 	for i := *optT; i < n; i++ {
-		h := "n" + strconv.Itoa(i-*optT+1)
+		h := pn + strconv.Itoa(i-*optT+1)
 		d := make([]byte, 0)
 		for j := 0; j < len(al); j++ {
 			c := al[j][i]

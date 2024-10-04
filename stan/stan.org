@@ -1046,7 +1046,7 @@ slice of target sequences.
 #+end_export
 #+begin_src go <<Construct target slice, Pr. \ref{pr:sta}>>=
   for i := 0; i < *optT; i++ {
-	  h := "t" + strconv.Itoa(i+1)
+	  h := pt + strconv.Itoa(i+1)
 	  d := make([]byte, 0)
 	  for j := 0; j < len(al); j++ {
 		  d = append(d, al[j][i])
@@ -1062,7 +1062,7 @@ nucleotides until we reach the end marker, zero.
 #+begin_src go <<Construct neighbor slice, Pr. \ref{pr:sta}>>=
   n = *optT + *optN
   for i := *optT; i < n; i++ {
-	  h := "n" + strconv.Itoa(i - *optT + 1)
+	  h := pn + strconv.Itoa(i - *optT + 1)
 	  d := make([]byte, 0)
 	  for j := 0; j < len(al); j++ {
 		  c := al[j][i]
