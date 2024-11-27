@@ -1,4 +1,4 @@
-# [`stan`](https://owncloud.gwdg.de/index.php/s/85gRtxIFrkYZiuj)
+# [`stan`](https://owncloud.gwdg.de/index.php/s/Y7X41Rtbni69ZCJ)
 ## Description
 Simulate sets of target and neighbor DNA sequences under a coalescent
 model with defined markers in the targets. By default, the markers are
